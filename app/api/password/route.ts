@@ -7,7 +7,7 @@ import { cookies } from "next/headers";
 export async function POST(req: Request) {
   try {
     const { actual, nueva } = await req.json();
-    const cookieStore = cookies(); // ✅ es síncrono, no uses await
+    const cookieStore = await cookies(); // ✅ es síncrono, no uses await
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
