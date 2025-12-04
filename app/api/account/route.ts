@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 export async function GET() {
   try {
-    const cookieStore = cookies(); // ✅ es síncrono, no uses await
+    const cookieStore = wawit cookies(); // ✅ es síncrono, no uses await
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
