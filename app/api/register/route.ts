@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
 // ✅ Bloque CORS reutilizable
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://cyndonstudios.vercel.app", // tu frontend
+  "Access-Control-Allow-Origin": "https://cyndorstudios.vercel.app",
   "Access-Control-Allow-Credentials": "true",
   "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
