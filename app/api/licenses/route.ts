@@ -5,11 +5,14 @@ import { cookies } from "next/headers";
 
 export async function GET() {
   try {
-    const cookieStore = await cookies(); // ✅ sin await
+    const cookieStore = cookies(); // ✅ síncrono
     const token = cookieStore.get("token")?.value;
 
     if (!token) {
-      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+      return NextResponse.json(
+        { error: "No autenticado" },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
@@ -24,9 +27,25 @@ export async function GET() {
       [userId]
     );
 
-    return NextResponse.json(rows);
+    return NextResponse.json(rows, { headers: corsHeaders });
   } catch (error) {
     console.error("Error en /api/licenses:", error);
-    return NextResponse.json({ error: "Error al obtener productos/licencias" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error al obtener productos/licencias" },
+      { status: 500, headers: corsHeaders }
+    );
   }
+}
+
+// ✅ Bloque CORS reutilizable
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://cyndonstudios.vercel.app", // tu frontend
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ✅ Handler para preflight OPTIONS
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }

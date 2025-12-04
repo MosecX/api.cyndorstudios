@@ -23,7 +23,10 @@ export async function POST(req: Request) {
     );
 
     // Guardar token en cookie
-    const response = NextResponse.json({ message: "Usuario registrado correctamente" });
+    const response = NextResponse.json(
+      { message: "Usuario registrado correctamente" },
+      { headers: corsHeaders }
+    );
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -33,7 +36,23 @@ export async function POST(req: Request) {
 
     return response;
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Error al registrar usuario" }, { status: 500 });
+    console.error("Error en /api/register:", error);
+    return NextResponse.json(
+      { error: "Error al registrar usuario" },
+      { status: 500, headers: corsHeaders }
+    );
   }
+}
+
+// ✅ Bloque CORS reutilizable
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://cyndonstudios.vercel.app", // tu frontend
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ✅ Handler para preflight OPTIONS
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }

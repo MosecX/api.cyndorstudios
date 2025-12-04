@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
 
   if (!token) {
-    return NextResponse.json({ user: null }, { status: 401 });
+    return NextResponse.json({ user: null }, { status: 401, headers: corsHeaders });
   }
 
   try {
@@ -24,11 +24,24 @@ export async function GET(req: NextRequest) {
     const user = rows[0];
 
     if (!user) {
-      return NextResponse.json({ user: null }, { status: 404 });
+      return NextResponse.json({ user: null }, { status: 404, headers: corsHeaders });
     }
 
-    return NextResponse.json({ user }, { status: 200 });
+    return NextResponse.json({ user }, { status: 200, headers: corsHeaders });
   } catch {
-    return NextResponse.json({ user: null }, { status: 401 });
+    return NextResponse.json({ user: null }, { status: 401, headers: corsHeaders });
   }
+}
+
+// ✅ Bloque CORS reutilizable
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://cyndonstudios.vercel.app", // tu frontend
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ✅ Handler para preflight OPTIONS
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }

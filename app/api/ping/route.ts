@@ -11,13 +11,38 @@ export async function GET() {
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
       }
     );
   } catch (error) {
     return new Response(
       JSON.stringify({ error: "Error interno en /api/ping" }),
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
     );
   }
+}
+
+// ✅ Bloque CORS reutilizable
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://cyndonstudios.vercel.app", // tu frontend
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ✅ Handler para preflight OPTIONS
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
 }

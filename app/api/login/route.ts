@@ -15,14 +15,20 @@ export async function POST(req: Request) {
     );
 
     if (!rows || rows.length === 0) {
-      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Usuario no encontrado" },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
     const user = rows[0];
     const match = await bcrypt.compare(password, user.password);
 
     if (!match) {
-      return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Contraseña incorrecta" },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
     const token = jwt.sign(
@@ -31,7 +37,11 @@ export async function POST(req: Request) {
       { expiresIn: "1d" }
     );
 
-    const response = NextResponse.json({ message: "Login exitoso", user });
+    const response = NextResponse.json(
+      { message: "Login exitoso", user },
+      { headers: corsHeaders }
+    );
+
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -42,6 +52,22 @@ export async function POST(req: Request) {
     return response;
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Error al iniciar sesión" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Error al iniciar sesión" },
+      { status: 500, headers: corsHeaders }
+    );
   }
+}
+
+// ✅ Bloque CORS reutilizable
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "https://cyndonstudios.vercel.app",
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ✅ Handler para preflight OPTIONS
+export async function OPTIONS() {
+  return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
