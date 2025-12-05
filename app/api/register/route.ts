@@ -35,10 +35,10 @@ export async function POST(req: Request) {
     });
 
     return response;
-  } catch (error) {
-    console.error("Error en /api/register:", error);
+  } catch (error: any) {
+    console.error("Error en /api/register:", error.message, error.stack);
     return NextResponse.json(
-      { error: "Error al registrar usuario" },
+      { error: error.message },
       { status: 500, headers: corsHeaders }
     );
   }
