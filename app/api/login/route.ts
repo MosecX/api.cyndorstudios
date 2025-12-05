@@ -3,57 +3,68 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { RowDataPacket } from "mysql2";
 
 export async function POST(req: Request) {
   try {
-    const { identifier, password } = await req.json();
+    const { email, username, password } = await req.json();
 
-    const db = await connectDB();
-    const [rows]: any = await db.execute(
-      "SELECT * FROM users WHERE email = ? OR username = ? LIMIT 1",
-      [identifier, identifier]
-    );
-
-    if (!rows || rows.length === 0) {
+    if ((!email && !username) || !password) {
       return NextResponse.json(
-        { error: "Usuario no encontrado" },
-        { status: 401, headers: corsHeaders }
+        { error: "Debes ingresar usuario/email y contraseña" },
+        { status: 400, headers: corsHeaders }
       );
     }
 
-    const user = rows[0];
-    const match = await bcrypt.compare(password, user.password);
+    const db = await connectDB();
 
-    if (!match) {
+    // 🔎 Buscar usuario por email o username
+    const [rows] = await db.execute<RowDataPacket[]>(
+      "SELECT * FROM users WHERE email = ? OR username = ?",
+      [email, username]
+    );
+
+    const user = rows[0];
+    if (!user) {
+      return NextResponse.json(
+        { error: "Usuario o correo no encontrado" },
+        { status: 404, headers: corsHeaders }
+      );
+    }
+
+    // 🔑 Validar contraseña
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
       return NextResponse.json(
         { error: "Contraseña incorrecta" },
         { status: 401, headers: corsHeaders }
       );
     }
 
+    // 🎟️ Crear token JWT
     const token = jwt.sign(
-      { id: user.id, username: user.username },
+      { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET!,
       { expiresIn: "1d" }
     );
 
+    // 🍪 Guardar token en cookie
     const response = NextResponse.json(
-      { message: "Login exitoso", user },
+      { message: "Login correcto" },
       { headers: corsHeaders }
     );
-
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24,
+      maxAge: 60 * 60 * 24, // 1 día
       path: "/",
     });
 
     return response;
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    console.error("Error en /api/login:", error.message, error.stack);
     return NextResponse.json(
-      { error: "Error al iniciar sesión" },
+      { error: error.message },
       { status: 500, headers: corsHeaders }
     );
   }
