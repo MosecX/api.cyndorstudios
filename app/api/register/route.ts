@@ -7,18 +7,46 @@ import jwt from "jsonwebtoken";
 export async function POST(req: Request) {
   try {
     const { username, email, password } = await req.json();
-    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (!username || !email || !password) {
+      return NextResponse.json(
+        { error: "Todos los campos son obligatorios" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
 
     const db = await connectDB();
+
+    // 🔎 Verificar duplicados por separado
+    const [userRows]: any = await db.execute("SELECT id FROM users WHERE username = ?", [username]);
+    if (userRows.length > 0) {
+      return NextResponse.json(
+        { error: `El usuario "${username}" ya está en uso` },
+        { status: 409, headers: corsHeaders }
+      );
+    }
+
+    const [emailRows]: any = await db.execute("SELECT id FROM users WHERE email = ?", [email]);
+    if (emailRows.length > 0) {
+      return NextResponse.json(
+        { error: `El correo "${email}" ya está registrado` },
+        { status: 409, headers: corsHeaders }
+      );
+    }
+
+    // Hashear contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insertar usuario
     const [result]: any = await db.execute(
-      "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+      "INSERT INTO users (username, email, password, createdAt, role) VALUES (?, ?, ?, NOW(), 'user')",
       [username, email, hashedPassword]
     );
 
-    // Crear token JWT inmediatamente después de registrar
+    // Crear token JWT
     const token = jwt.sign(
       { id: result.insertId, username },
-      process.env.JWT_SECRET!, // asegúrate de tenerlo en tu .env.local
+      process.env.JWT_SECRET!,
       { expiresIn: "1d" }
     );
 
@@ -30,7 +58,7 @@ export async function POST(req: Request) {
     response.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24, // 1 día
+      maxAge: 60 * 60 * 24,
       path: "/",
     });
 
@@ -52,7 +80,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-// ✅ Handler para preflight OPTIONS
 export async function OPTIONS() {
   return NextResponse.json({}, { status: 200, headers: corsHeaders });
 }
