@@ -7,11 +7,11 @@ import { RowDataPacket } from "mysql2";
 
 export async function POST(req: Request) {
   try {
-    const { email, username, password } = await req.json();
+    const { identifier, password } = await req.json();
 
-    if ((!email && !username) || !password) {
+    if (!identifier || !password) {
       return NextResponse.json(
-        { error: "Debes ingresar usuario/email y contraseña" },
+        { error: "Debes ingresar usuario/correo y contraseña" },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     // 🔎 Buscar usuario por email o username
     const [rows] = await db.execute<RowDataPacket[]>(
       "SELECT * FROM users WHERE email = ? OR username = ?",
-      [email, username]
+      [identifier, identifier]
     );
 
     const user = rows[0];
